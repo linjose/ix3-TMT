@@ -8,7 +8,7 @@ ix3-TMT(Team-Management-Tool) is a tool for managing digital consultancy team-de
 ### converters ###
 #### PPT to PDF to PNG
 引用： hadwinzhy/convert-ppt-to-jpg
-<pre><code>apt-get install libreoffice openjdk-8-jdk imagemagick</code></pre>
+<pre><code>sudo apt-get update && sudo apt-get install -y libreoffice openjdk-8-jdk imagemagick</code></pre>
 
 <pre><code>#!/bin/bash
 
