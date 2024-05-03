@@ -33,8 +33,7 @@ echo 'please check folder converted_jpg'
 </code></pre>
 
 - 需ImageMagick修改參數
-<pre><code>vim /etc/ImageMagick-6/policy.xml</code></pre>
-<pre><code>policy domain="coder" rights="read|write" pattern="PDF"</code></pre>
+<pre><code>sudo sed -i 's/policy domain="coder" rights="none" pattern="PDF"/policy domain="coder" rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml</code></pre>
 
 
 #### 圖像呈現 ####
