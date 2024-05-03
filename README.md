@@ -1,6 +1,8 @@
 # ix3-TMT
 ix3-TMT(Team-Management-Tool) is a tool for managing digital consultancy team-delivered professional reports.
 
+## 先前準備 ##
+需先準備Ubuntu版本18.04以上的Linux發行版本。
 
 ## 報告管理 ##
 團隊個人撰寫的專業報告，除了計算交付數量外，亦在團隊內交流使用。
