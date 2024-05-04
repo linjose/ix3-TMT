@@ -38,6 +38,7 @@ echo 'please check folder converted_jpg'
 
 
 #### 圖像呈現 ####
+參考：https://github.com/zackargyle/react-image-layout
  - 分個人製作的內容
  - 圖像說明: 連結原檔案
  - 交付分享統計
