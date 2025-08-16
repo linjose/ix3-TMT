@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pinterest 風格圖片搜尋 | Bootstrap + JSON</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root{
+      --chip-bg:#f1f3f5;
+      --chip-text:#343a40;
+      --chip-active-bg:#0d6efd;
+      --chip-active-text:#fff;
+    }
+    body{ background:#fafafa; }
+    /* Sticky header */
+    .app-header{ position:sticky; top:0; z-index:1020; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+    .search-icon{ position:absolute; left:.75rem; top:50%; transform:translateY(-50%); opacity:.6 }
+    .search-input{ padding-left:2.25rem; }
+
+    /* Tag chips */
+    .chip{ cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .65rem; border-radius:999px; background:var(--chip-bg); color:var(--chip-text); border:1px solid rgba(0,0,0,.06); transition:.15s ease; }
+    .chip:hover{ filter:brightness(.97); }
+    .chip.active{ background:var(--chip-active-bg); color:var(--chip-active-text); border-color:transparent; }
+
+    /* Masonry layout via CSS columns */
+    .masonry{ column-count:1; column-gap:1rem; }
+    @media (min-width:576px){ .masonry{ column-count:2; } }
+    @media (min-width:992px){ .masonry{ column-count:4; } }
+    @media (min-width:1200px){ .masonry{ column-count:5; } }
+    .masonry-item{ break-inside:avoid; margin:0 0 1rem; display:inline-block; width:100%; }
+
+    .card{ border:0; border-radius:1rem; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,.06); }
+    .card-img-top{ display:block; width:100%; height:auto; object-fit:cover; }
+
+    .result-bar{ font-size:.95rem; color:#6c757d; }
+    .btn-clear{ white-space:nowrap; }
+
+    .badge-tag{ background:#f8f9fa; color:#495057; border:1px solid #e9ecef; }
+
+    /* Image hover subtle scale */
+    .img-wrap{ overflow:hidden; }
+    .img-wrap img{ transition: transform .25s ease; }
+    .img-wrap:hover img{ transform:scale(1.03); }
+  </style>
+</head>
+<body>
+  <!-- Header / Controls -->
+  <div class="app-header py-3">
+    <div class="container">
+      <div class="row g-2 align-items-center">
+        <div class="col-12 col-lg-5 position-relative">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M21 21l-4.3-4.3m1.3-4.7a7 7 0 1 1-14 0a7 7 0 0 1 14 0"/></svg>
+          <input id="searchInput" type="search" class="form-control form-control-lg search-input" placeholder="輸入關鍵字（名稱、作者或標籤）…" />
+        </div>
+        <div class="col-6 col-lg-3">
+          <select id="sortSelect" class="form-select form-select-lg">
+            <option value="newest" selected>最新上傳</option>
+            <option value="oldest">最早上傳</option>
+            <option value="name">名稱 A → Z</option>
+          </select>
+        </div>
+        <div class="col-6 col-lg-2 text-end ms-auto">
+          <button id="clearBtn" class="btn btn-outline-secondary btn-lg w-100 btn-clear">清除篩選</button>
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div class="col-12">
+          <div id="tagBar" class="d-flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+          <div id="resultBar" class="result-bar">載入中…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="container my-4">
+    <div id="gallery" class="masonry"></div>
+  </div>
+
+  <!-- Modal for full image -->
+  <div class="modal fade" id="imgModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">圖片預覽</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center">
+            <img id="modalImg" alt="Full" class="img-fluid rounded" />
+          </div>
+          <div id="modalMeta" class="mt-3 small text-secondary"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON 資料（可改為外部檔案載入） -->
+  <script>
+    // 若想改為外部檔案：
+    // 1) 將下方 imagesData 陣列搬到 images.json
+    // 2) 註解掉下行 const DATA = imagesData; 並解除 fetch 的註解
+    // fetch('images.json').then(r=>r.json()).then(data => init(data));
+
+    const imagesData = [
+      {
+        "name": "晨光山谷",
+        "url": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200",
+        "tags": ["自然","山","晨曦"],
+        "author": "L. Carter",
+        "uploaded_at": "2025-07-21"
+      },
+      {
+        "name": "藍色海岸線",
+        "url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200",
+        "tags": ["海洋","旅遊","藍"],
+        "author": "M. Diaz",
+        "uploaded_at": "2025-08-01"
+      },
+      {
+        "name": "城市天際線",
+        "url": "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1200",
+        "tags": ["城市","建築","夜景"],
+        "author": "K. Chen",
+        "uploaded_at": "2025-06-28"
+      },
+      {
+        "name": "雨後綠葉",
+        "url": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200",
+        "tags": ["植物","微距","自然"],
+        "author": "A. Rossi",
+        "uploaded_at": "2025-08-12"
+      },
+      {
+        "name": "金色沙漠",
+        "url": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&sat=50",
+        "tags": ["沙漠","自然","旅遊"],
+        "author": "S. Ahmed",
+        "uploaded_at": "2025-05-02"
+      },
+      {
+        "name": "白色建築幾何",
+        "url": "https://images.unsplash.com/photo-1496302662116-35cc4f36df92?w=1200",
+        "tags": ["建築","幾何","極簡"],
+        "author": "Y. Nakamura",
+        "uploaded_at": "2025-07-30"
+      },
+      {
+        "name": "森林步道",
+        "url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200",
+        "tags": ["森林","散步","自然"],
+        "author": "C. Müller",
+        "uploaded_at": "2025-06-12"
+      },
+      {
+        "name": "咖啡時光",
+        "url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200",
+        "tags": ["咖啡","生活","室內"],
+        "author": "J. Santos",
+        "uploaded_at": "2025-07-03"
+      },
+      {
+        "name": "工業風倉庫",
+        "url": "https://images.unsplash.com/photo-1449247709967-d4461a6a6103?w=1200",
+        "tags": ["工業","建築","黑白"],
+        "author": "P. Novak",
+        "uploaded_at": "2025-02-14"
+      },
+      {
+        "name": "夜色公路",
+        "url": "https://images.unsplash.com/photo-1465447142348-e9952c393450?w=1200",
+        "tags": ["公路","夜景","長曝光"],
+        "author": "R. Patel",
+        "uploaded_at": "2025-08-10"
+      },
+      {
+        "name": "湖畔倒影",
+        "url": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800",
+        "tags": ["湖","反射","靜謐"],
+        "author": "E. Ivanov",
+        "uploaded_at": "2025-04-09"
+      },
+      {
+        "name": "街角花店",
+        "url": "https://images.unsplash.com/photo-1490616961650-ebb87c6f7dfd?w=1200",
+        "tags": ["花卉","街拍","城市"],
+        "author": "B. Laurent",
+        "uploaded_at": "2025-07-18"
+      },
+      {
+        "name": "雲海日出",
+        "url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&auto=format",
+        "tags": ["雲海","日出","山"],
+        "author": "T. Wong",
+        "uploaded_at": "2025-08-14"
+      },
+      {
+        "name": "紅磚巷弄",
+        "url": "https://images.unsplash.com/photo-1501183638710-841dd1904471?w=1200",
+        "tags": ["巷弄","紅磚","復古"],
+        "author": "H. Park",
+        "uploaded_at": "2025-03-22"
+      },
+      {
+        "name": "城市暮色",
+        "url": "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1200&sat=-20",
+        "tags": ["城市","黃昏","高樓"],
+        "author": "N. Silva",
+        "uploaded_at": "2025-08-02"
+      },
+      {
+        "name": "黑白樓梯",
+        "url": "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=1200",
+        "tags": ["黑白","建築","線條"],
+        "author": "A. Bianchi",
+        "uploaded_at": "2025-01-19"
+      },
+      {
+        "name": "雨夜霓虹",
+        "url": "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?w=1200",
+        "tags": ["夜景","霓虹","街拍"],
+        "author": "S. Kim",
+        "uploaded_at": "2025-07-29"
+      },
+      {
+        "name": "玻璃立面",
+        "url": "https://images.unsplash.com/photo-1479839672679-a46483c0e7c8?w=1200",
+        "tags": ["建築","立面","現代"],
+        "author": "D. Brown",
+        "uploaded_at": "2025-06-06"
+      },
+      {
+        "name": "白牆與光影",
+        "url": "https://images.unsplash.com/photo-1487700160041-babef9c3cb55?w=1200",
+        "tags": ["極簡","光影","室內"],
+        "author": "I. Garcia",
+        "uploaded_at": "2025-05-30"
+      },
+      {
+        "name": "晨跑軌跡",
+        "url": "https://images.unsplash.com/photo-1509223197845-458d87318791?w=1200",
+        "tags": ["運動","清晨","城市"],
+        "author": "O. Jensen",
+        "uploaded_at": "2025-08-09"
+      }
+    ];
+  </script>
+
+  <script>
+    // ---------- 小工具 ----------
+    const $ = (sel, el=document) => el.querySelector(sel);
+    const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+    const formatDate = (dStr) => new Date(dStr + 'T00:00:00').toLocaleDateString('zh-TW');
+    const debounce = (fn, wait=200) => { let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; };
+
+    // ---------- 主程式 ----------
+    let STATE = {
+      keyword: '',
+      selectedTags: new Set(),
+      sortBy: 'newest',
+    };
+
+    function init(data){
+      window.DATA = data;
+      buildTagBar(data);
+      bindControls();
+      render();
+    }
+
+    function uniqueTags(data){
+      const s = new Set();
+      data.forEach(it => (it.tags||[]).forEach(t => s.add(t)));
+      return Array.from(s).sort((a,b)=> a.localeCompare(b,'zh-Hant'));
+    }
+
+    function buildTagBar(data){
+      const tags = uniqueTags(data);
+      const bar = $('#tagBar');
+      bar.innerHTML = '';
+      tags.forEach(tag =>{
+        const chip = document.createElement('button');
+        chip.type='button';
+        chip.className='chip';
+        chip.textContent = tag;
+        chip.addEventListener('click', ()=>{
+          if(STATE.selectedTags.has(tag)) STATE.selectedTags.delete(tag); else STATE.selectedTags.add(tag);
+          chip.classList.toggle('active');
+          render();
+        });
+        bar.appendChild(chip);
+      });
+    }
+
+    function bindControls(){
+      $('#searchInput').addEventListener('input', debounce((e)=>{ STATE.keyword = e.target.value.trim().toLowerCase(); render(); }, 250));
+      $('#sortSelect').addEventListener('change', (e)=>{ STATE.sortBy = e.target.value; render(); });
+      $('#clearBtn').addEventListener('click', ()=>{
+        STATE.keyword=''; STATE.selectedTags.clear(); STATE.sortBy='newest';
+        $('#searchInput').value=''; $('#sortSelect').value='newest';
+        $$('#tagBar .chip').forEach(c=>c.classList.remove('active'));
+        render();
+      });
+    }
+
+    function applyFilters(data){
+      const kw = STATE.keyword;
+      const needTags = Array.from(STATE.selectedTags);
+      let out = data.filter(it => {
+        const inKw = !kw ||
+          (it.name && it.name.toLowerCase().includes(kw)) ||
+          (it.author && it.author.toLowerCase().includes(kw)) ||
+          (it.tags && it.tags.some(t => String(t).toLowerCase().includes(kw)));
+        const inTags = needTags.length===0 || needTags.every(t => it.tags && it.tags.includes(t));
+        return inKw && inTags;
+      });
+      switch(STATE.sortBy){
+        case 'oldest': out.sort((a,b)=> new Date(a.uploaded_at) - new Date(b.uploaded_at)); break;
+        case 'name': out.sort((a,b)=> a.name.localeCompare(b.name,'zh-Hant')); break;
+        default: out.sort((a,b)=> new Date(b.uploaded_at) - new Date(a.uploaded_at));
+      }
+      return out;
+    }
+
+    function render(){
+      const data = applyFilters(window.DATA||[]);
+      const gallery = $('#gallery');
+      gallery.innerHTML = data.map((it, idx)=> cardTemplate(it, idx)).join('');
+      $('#resultBar').textContent = `共 ${data.length} 張圖片 · 排序：${labelOfSort(STATE.sortBy)}${STATE.keyword?` · 關鍵字：「${STATE.keyword}」`:''}${STATE.selectedTags.size?` · 標籤：${Array.from(STATE.selectedTags).join(', ')}`:''}`;
+      // 事件繫結（因為 innerHTML 重設）
+      $$('#gallery .masonry-item [data-role="open"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const i = Number(btn.getAttribute('data-idx'));
+          openModal(data[i]);
+        })
+      });
+    }
+
+    function labelOfSort(v){
+      return v==='name'? '名稱 A→Z' : (v==='oldest'?'最早上傳':'最新上傳');
+    }
+
+    function cardTemplate(it, idx){
+      const tagBadges = (it.tags||[]).map(t=>`<span class="badge rounded-pill badge-tag me-1">${t}</span>`).join('');
+      return `
+        <article class="masonry-item">
+          <div class="card">
+            <div class="img-wrap">
+              <img src="${it.url}" alt="${escapeHtml(it.name)}" loading="lazy" class="card-img-top">
+            </div>
+            <div class="card-body">
+              <h6 class="card-title mb-1">${escapeHtml(it.name)}</h6>
+              <div class="text-secondary small mb-2">作者：${escapeHtml(it.author || '—')} · 上傳：${formatDate(it.uploaded_at)}</div>
+              <div class="mb-2">${tagBadges}</div>
+              <button class="btn btn-sm btn-primary" data-role="open" data-idx="${idx}">查看大圖</button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function openModal(item){
+      $('#modalTitle').textContent = item.name;
+      const img = $('#modalImg');
+      img.src = item.url; img.alt = item.name;
+      $('#modalMeta').innerHTML = `
+        <div>作者：<strong>${escapeHtml(item.author||'—')}</strong></div>
+        <div>上傳日期：${formatDate(item.uploaded_at)}</div>
+        <div>標籤：${(item.tags||[]).map(t=>`<span class='badge text-bg-light me-1'>${t}</span>`).join('')}</div>
+      `;
+      const m = bootstrap.Modal.getOrCreateInstance($('#imgModal'));
+      m.show();
+    }
+
+    function escapeHtml(str){
+      return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+    }
+
+    // 啟動
+    (function(){ init(imagesData); })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
