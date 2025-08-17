@@ -42,6 +42,7 @@ echo 'please check folder converted_jpg'
 參考：https://github.com/zackargyle/react-image-layout
  - 分個人製作的內容
  - 圖像說明: 連結原檔案 (同 bootstrap-image-layout)
+   - https://adorable-daifuku-580c57.netlify.app/
  - 交付分享統計
  - ppt to txt (es/Quickwit儲存+中文分詞器)
  - AI Search
