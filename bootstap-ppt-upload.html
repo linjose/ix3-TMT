@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>拖放上傳｜Bootstrap + 原生 JS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root{
+      --chip-bg:#f1f3f5; --chip-text:#343a40; --chip-active-bg:#0d6efd; --chip-active-text:#fff;
+    }
+    body{ background:#fafafa; }
+    .app-header{ position:sticky; top:0; z-index:1020; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+
+    .uploader{ border:2px dashed #ced4da; border-radius:1rem; background:#fff; padding:2.5rem; text-align:center; transition:.2s ease; }
+    .uploader.dragover{ border-color:#0d6efd; background:#f0f6ff; }
+    .uploader input[type=file]{ display:none; }
+
+    .file-card{ border:0; border-radius:1rem; box-shadow:0 6px 16px rgba(0,0,0,.06); }
+    .progress{ height:.6rem; }
+    .small-muted{ font-size:.95rem; color:#6c757d; }
+  </style>
+</head>
+<body>
+  <div class="app-header py-3">
+    <div class="container">
+      <div class="d-flex flex-wrap gap-3 align-items-center">
+        <h1 class="h4 mb-0">拖放上傳</h1>
+        <div class="ms-auto d-flex gap-2">
+          <button id="btnClear" class="btn btn-outline-secondary">清除清單</button>
+          <button id="btnStartAll" class="btn btn-primary">開始全部上傳</button>
+        </div>
+      </div>
+      <div class="small-muted mt-2">將檔案拖曳到下方框內，或點擊選擇。預設會送到 <code>upload.php</code>（可在程式頂端修改）。</div>
+    </div>
+  </div>
+
+  <div class="container my-4">
+    <!-- Dropzone -->
+    <label id="dropZone" class="uploader w-100">
+      <input id="fileInput" type="file" multiple />
+      <div class="display-6">⬆️</div>
+      <p class="lead mb-1">拖放檔案到此處</p>
+      <p class="small text-secondary mb-0">或點擊選擇檔案。單檔預設上限 50 MB，可於設定調整。</p>
+    </label>
+
+    <!-- Settings -->
+    <div class="row g-3 align-items-end mt-2">
+      <div class="col-12 col-md-6">
+        <label class="form-label">上傳目的端點（相對或絕對 URL）</label>
+        <input id="endpointInput" type="url" class="form-control" placeholder="/upload.php" value="/upload.php" />
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label">單檔大小上限 (MB)</label>
+        <input id="maxSizeInput" type="number" min="1" class="form-control" value="50" />
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label">允許副檔名（逗號分隔，可留空）</label>
+        <input id="extInput" type="text" class="form-control" placeholder="jpg,png,zip,pdf" />
+      </div>
+    </div>
+
+    <!-- File queue -->
+    <div id="queue" class="mt-4"></div>
+  </div>
+
+  <script>
+    // ====== 設定 ======
+    const state = {
+      endpoint: '/upload.php',
+      maxSizeMB: 50,
+      allowExt: new Set(),
+      queue: [], // {file, status, progress, xhr, id, error, response}
+    };
+    const $ = (s, el=document)=> el.querySelector(s);
+    const $$ = (s, el=document)=> Array.from(el.querySelectorAll(s));
+    const fmtBytes = n => {
+      const u=['B','KB','MB','GB']; let i=0, v=n; while(v>=1024 && i<u.length-1){ v/=1024; i++; } return v.toFixed( (i?1:0) )+ ' ' + u[i];
+    };
+
+    // ====== 初始化 ======
+    const dropZone = $('#dropZone');
+    const fileInput = $('#fileInput');
+    const queueEl = $('#queue');
+
+    $('#endpointInput').addEventListener('input', e=> state.endpoint = e.target.value || '/upload.php');
+    $('#maxSizeInput').addEventListener('input', e=> state.maxSizeMB = Math.max(1, Number(e.target.value||50)));
+    $('#extInput').addEventListener('input', e=> {
+      const v = e.target.value.trim();
+      state.allowExt = new Set(v? v.split(',').map(s=> s.trim().toLowerCase().replace(/^\./,'')) : []);
+    });
+
+    // 拖放事件
+    ;['dragenter','dragover'].forEach(evt=>{
+      dropZone.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); dropZone.classList.add('dragover'); });
+    });
+    ;['dragleave','dragend','drop'].forEach(evt=>{
+      dropZone.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('dragover'); });
+    });
+    dropZone.addEventListener('drop', e=>{ handleFiles(e.dataTransfer.files); });
+    fileInput.addEventListener('change', e=> handleFiles(e.target.files));
+
+    $('#btnClear').addEventListener('click', ()=>{ state.queue.forEach(it=> it.xhr?.abort()); state.queue=[]; renderQueue(); });
+    $('#btnStartAll').addEventListener('click', ()=>{ startAll(); });
+
+    function handleFiles(fileList){
+      const files = Array.from(fileList||[]);
+      files.forEach(f=>{
+        const ext = (f.name.split('.').pop()||'').toLowerCase();
+        if (state.allowExt.size && !state.allowExt.has(ext)) {
+          enqueue(f, 'rejected', 0, `副檔名 .${ext} 不允許`);
+          return;
+        }
+        const maxBytes = state.maxSizeMB * 1024 * 1024;
+        if (f.size > maxBytes){
+          enqueue(f, 'rejected', 0, `超過大小上限 ${state.maxSizeMB} MB（實際 ${fmtBytes(f.size)}）`);
+          return;
+        }
+        enqueue(f, 'ready', 0);
+      });
+      renderQueue();
+    }
+
+    let idSeq = 1;
+    function enqueue(file, status, progress, error){
+      state.queue.push({ id: idSeq++, file, status, progress, error: error||'', xhr: null, response: null });
+    }
+
+    function renderQueue(){
+      if (!state.queue.length){ queueEl.innerHTML = '<div class="text-secondary">尚無檔案</div>'; return; }
+      queueEl.innerHTML = state.queue.map(item=> cardOf(item)).join('');
+      // 綁定按鈕事件
+      $$('.btn-start').forEach(btn=> btn.addEventListener('click', ()=> startOne(Number(btn.dataset.id))));
+      $$('.btn-cancel').forEach(btn=> btn.addEventListener('click', ()=> cancelOne(Number(btn.dataset.id))));
+      $$('.btn-remove').forEach(btn=> btn.addEventListener('click', ()=> removeOne(Number(btn.dataset.id))));
+    }
+
+    function cardOf(it){
+      const f = it.file;
+      const statusBadge = {
+        ready: '<span class="badge text-bg-secondary">就緒</span>',
+        uploading: '<span class="badge text-bg-primary">上傳中</span>',
+        success: '<span class="badge text-bg-success">完成</span>',
+        error: '<span class="badge text-bg-danger">失敗</span>',
+        rejected: '<span class="badge text-bg-warning text-dark">已拒絕</span>'
+      }[it.status] || '';
+
+      const actions = it.status==='ready' ? `<button class="btn btn-sm btn-primary btn-start" data-id="${it.id}">上傳</button>` :
+                      it.status==='uploading' ? `<button class="btn btn-sm btn-outline-danger btn-cancel" data-id="${it.id}">取消</button>` :
+                      `<button class="btn btn-sm btn-outline-secondary btn-remove" data-id="${it.id}">移除</button>`;
+
+      const progressBar = (it.status==='uploading' || it.status==='success' || it.status==='error') ? `
+        <div class="progress mt-2" role="progressbar" aria-valuenow="${it.progress}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar ${it.status==='success'?'bg-success': it.status==='error'?'bg-danger':''}" style="width:${it.progress}%">${Math.floor(it.progress)}%</div>
+        </div>` : '';
+
+      const errorBlock = it.error? `<div class="text-danger small mt-2">${it.error}</div>` : '';
+      const respBlock = it.response? `<pre class="bg-light border rounded p-2 mt-2 small mb-0">${escapeHtml(it.response)}</pre>` : '';
+
+      return `
+        <div class="card file-card mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-semibold">${escapeHtml(f.name)}</div>
+                <div class="small text-secondary">${fmtBytes(f.size)} · 類型：${escapeHtml(f.type || '未提供')}</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">${statusBadge} ${actions}</div>
+            </div>
+            ${progressBar}
+            ${errorBlock}
+            ${respBlock}
+          </div>
+        </div>`;
+    }
+
+    function startAll(){
+      state.queue.filter(it=> it.status==='ready').forEach(it=> startOne(it.id));
+    }
+
+    function startOne(id){
+      const it = state.queue.find(x=> x.id===id);
+      if (!it || it.status!=='ready') return;
+      it.status='uploading'; it.progress=0; renderQueue();
+
+      const form = new FormData();
+      form.append('file', it.file);
+      // 也可在此附加自定義欄位：form.append('folder', 'images');
+
+      const xhr = new XMLHttpRequest();
+      it.xhr = xhr;
+      xhr.open('POST', state.endpoint, true);
+
+      xhr.upload.onprogress = (e)=>{
+        if (e.lengthComputable){ it.progress = Math.min(100, Math.round(e.loaded * 100 / e.total)); renderQueue(); }
+      };
+      xhr.onreadystatechange = ()=>{
+        if (xhr.readyState === 4){
+          if (xhr.status >= 200 && xhr.status < 300){
+            it.status='success'; it.progress=100; it.response = xhr.responseText || '';
+          }else{
+            it.status='error'; it.error = `HTTP ${xhr.status}：${xhr.statusText||'上傳失敗'}`; it.response = xhr.responseText || '';
+          }
+          renderQueue();
+        }
+      };
+      xhr.onerror = ()=>{ it.status='error'; it.error='連線錯誤'; renderQueue(); };
+      xhr.send(form);
+    }
+
+    function cancelOne(id){
+      const it = state.queue.find(x=> x.id===id);
+      if (it?.xhr && it.status==='uploading'){ it.xhr.abort(); it.status='error'; it.error='已取消'; renderQueue(); }
+    }
+
+    function removeOne(id){
+      const idx = state.queue.findIndex(x=> x.id===id);
+      if (idx>=0){
+        try{ state.queue[idx].xhr?.abort(); }catch(_){}
+        state.queue.splice(idx,1); renderQueue();
+      }
+    }
+
+    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+
+    // 初始渲染
+    renderQueue();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!--
+  ========================= 伺服端（Apache）簡易說明 =========================
+  一、最簡 PHP 端點（/upload.php）
+  ---------------------------------
+  <?php
+  // 確保在 Apache 上啟用 PHP（或使用 php-fpm）。
+  // 建議在虛擬主機中設定：upload_max_filesize、post_max_size、max_file_uploads 等。
+  header('Content-Type: application/json; charset=utf-8');
+  if (!isset($_FILES['file'])) {
+    http_response_code(400);
+    echo json_encode(['ok'=>false,'error'=>'No file field']); exit;
+  }
+  $f = $_FILES['file'];
+  if ($f['error'] !== UPLOAD_ERR_OK) {
+    http_response_code(400);
+    echo json_encode(['ok'=>false,'error'=>'Upload error','code'=>$f['error']]); exit;
+  }
+  // 目標資料夾（請確保 Apache 寫入權限）
+  $targetDir = __DIR__ . '/uploads';
+  if (!is_dir($targetDir)) { mkdir($targetDir, 0775, true); }
+  // 安全檔名
+  $base = basename($f['name']);
+  $safe = preg_replace('/[^A-Za-z0-9._-]/','_', $base);
+  $dest = $targetDir . '/' . $safe;
+  if (!move_uploaded_file($f['tmp_name'], $dest)){
+    http_response_code(500);
+    echo json_encode(['ok'=>false,'error'=>'move_uploaded_file failed']); exit;
+  }
+  echo json_encode(['ok'=>true,'name'=>$safe,'size'=>$f['size'],'path'=>'/uploads/'.$safe]);
+  ?>
+
+  二、Apache 設定重點
+  ---------------------
+  1) 若使用 .htaccess 控制：
+     php_value upload_max_filesize 100M
+     php_value post_max_size 110M
+     php_value max_file_uploads 20
+
+  2) 目錄權限：
+     uploads 目錄需讓 Apache 使用者（如 www-data 或 apache）可寫入。
+
+  3) 若不用 PHP，可改用：
+     - CGI/WSGI：自行撰寫接收 multipart/form-data 的腳本。
+     - WebDAV：啟用 mod_dav、mod_dav_fs，設定可寫入的 DAV 位置（需權限控管）。
+
+  三、安全建議
+  --------------
+  - 驗證副檔名與 MIME Type；對可執行檔上傳一律拒絕。
+  - 上傳後端目錄以純靜態方式服務，避免直接執行上傳檔案。
+  - 對上傳檔案重新命名並置入隔離目錄；必要時做防毒掃描。
+  - 如需認證，於前端夾帶 Token（自訂 Header），後端驗證。
+  ============================================================================
+  -->
+</body>
+</html>
