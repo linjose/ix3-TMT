@@ -1,6 +1,15 @@
 # ix3-TMT
 ix3-TMT(Team-Management-Tool) is a tool for managing digital consultancy team-delivered professional reports.
 
+```mermaid
+flowchart TD
+    A[START] --> B{upload/search}
+    B -- upload --> C[upload PPTX files] --> C1[convert slides to images] --> C2[attach labels]
+    B -- search --> D[search images] --> D1[get results and images] --> D2[download slides]
+    C2 --> E[FINISH]
+    D2 --> E[FINISH]
+```
+
 ## 先前準備 ##
 需先準備Ubuntu版本18.04以上的Linux發行版本。
 
