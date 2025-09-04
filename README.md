@@ -4,7 +4,7 @@ ix3-TMT(Team-Management-Tool) is a tool for managing digital consultancy team-de
 ```mermaid
 flowchart TD
     A[START] --> B{upload/search}
-    B -- upload --> C[upload PPTX files] --> C1[convert slides to images] --> C2[attach labels]
+    B -- upload --> C[upload PPTX files] --> C1[convert slides to images] --> C2[attach labels <br> & record in DB]
     B -- search --> D[search images] --> D1[get results and images] --> D2[download slides]
     C2 --> E[FINISH]
     D2 --> E[FINISH]
