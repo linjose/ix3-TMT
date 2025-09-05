@@ -1,5 +1,6 @@
-# ix3-TMT
+# ix3-TMT 
 ix3-TMT(Team-Management-Tool) is a tool for managing digital consultancy team-delivered professional reports.
+是一款可以"一目了然"的簡報素材查找與分享方案
 
 ```mermaid
 flowchart TD
