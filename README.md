@@ -55,6 +55,19 @@ echo 'please check folder converted_jpg'
 <pre><code>sudo sed -i 's/policy domain="coder" rights="none" pattern="PDF"/policy domain="coder" rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml</code></pre>
 
 
+#### 欄位
+- id uuid
+- file_name 檔案名稱
+- file_size 檔案大小
+- file_pages 檔案頁數
+- file_path 檔案路徑
+- file_remark 描述
+- file_tag 標籤
+- upload_date 上傳日期
+- uploader 上傳者
+- cnt_dl 下載次數
+- cnt_star 星號
+
 #### 圖像呈現 ####
 參考：
  - 分個人製作的內容
