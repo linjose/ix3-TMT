@@ -75,6 +75,6 @@ echo 'please check folder converted_jpg'
  - 圖像說明: 連結原檔案 (同 bootstrap-image-layout)
    - https://adorable-daifuku-580c57.netlify.app/
  - 交付分享統計:
-   - superset (處理中)
+   - superset (處理中) 環境測試 https://www.sabbirz.com/blog/install-apache-superset-on-ubuntu-a-complete-step-
  - ppt to txt (es/Quickwit儲存+中文分詞器)
  - AI Search
