@@ -75,6 +75,25 @@ echo 'please check folder converted_jpg'
  - 圖像說明: 連結原檔案 (同 bootstrap-image-layout)
    - https://adorable-daifuku-580c57.netlify.app/
  - 交付分享統計:
-   - superset (處理中) 環境測試 https://www.sabbirz.com/blog/install-apache-superset-on-ubuntu-a-complete-step-
+   - superset (參考：https://www.sabbirz.com/blog/install-apache-superset-on-ubuntu-a-complete-step- )
+   - 待中文化
+```
+sudo apt update
+sudo apt upgrade
+sudo apt-get install micro build-essential libssl-dev libffi-dev python3-dev python3-pip libsasl2-dev libldap2-dev default-libmysqlclient-dev
+sudo apt install python3.12-venv
+sudo apt install python3.12-dev
+pip install --upgrade pip setuptools wheel pillow 
+pip install apache-superset --break-system-packages
+export SUPERSET_SECRET_KEY=***********
+export FLASK_APP=superset
+pip install marshmallow==3.20.1 --break-system-packages
+superset db upgrade
+superset fab create-admin
+superset load-examples
+superset init
+superset run -h 0.0.0.0 -p 8088
+```  
+
  - ppt to txt (es/Quickwit儲存+中文分詞器)
  - AI Search
