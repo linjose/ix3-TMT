@@ -76,7 +76,7 @@ echo 'please check folder converted_jpg'
    - https://adorable-daifuku-580c57.netlify.app/
  - 交付分享統計:
    - superset (參考：https://www.sabbirz.com/blog/install-apache-superset-on-ubuntu-a-complete-step- )
-   - 待中文化
+   - 待中文化 (https://github.com/lutinglt/superset-zh)
 ```
 sudo apt update
 sudo apt upgrade
