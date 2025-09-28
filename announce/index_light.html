@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />    
+    <!-- 若看到亂碼，請確認此檔案本身是以 UTF-8 (無 BOM) 儲存，且伺服器標頭含 charset=UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>最新公告</title>
+    <style>
+      :root {
+        --bg: #fafafa;
+        --card: #e6e9ef;
+        --text: #0b0c10;
+        --muted: #12141a;
+        --accent: #5b8cff;
+        --border: #e6e9ef;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: Microsoft JhengHei, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: linear-gradient(180deg, #fafafa, #e6e9ef);
+        color: var(--text);
+      }
+      .container {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 32px 16px 80px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 0;
+        letter-spacing: 0.4px;
+      }
+      .toolbar { display: flex; gap: 8px; align-items: center; }
+      .search {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 10px 12px;
+        color: var(--text);
+        outline: none;
+        width: 260px;
+      }
+      .refresh {
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+      .refresh:hover { border-color: #bec4d1; }
+
+
+      .grid {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 10px;
+      }
+      .card {
+        background: linear-gradient(180deg, #fafafa, #e6e9ef);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        min-height: 80px;
+        position: relative;
+        transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+        cursor: pointer;
+      }
+      .card:hover { transform: translateY(-2px); border-color: #bec4d1; box-shadow: 0 4px 18px rgba(2,10,33,.3); }
+      .card h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        line-height: 1.35;
+      }
+      .date { color: var(--muted); font-size: 13px; }
+      .excerpt { color: #626a78; font-size: 14px; margin-top: 10px; }
+
+      .empty, .error {
+        background: rgba(255,255,255,.02);
+        border: 1px dashed var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        color: var(--muted);
+        margin-top: 18px;
+      }
+
+      dialog::backdrop { background: rgba(6,10,22,.7); }
+      dialog {
+        width: min(720px, 92vw);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 0;
+        background: linear-gradient(180deg, #fafafa, #e6e9ef);
+        color: var(--text);
+        box-shadow: 0 14px 48px rgba(0,0,0,.45);
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .modal-title { font-size: 18px; margin: 0; }
+      .modal-date { color: var(--muted); font-size: 13px; margin-left: 8px; }
+      .modal-body { padding: 18px; line-height: 1.7; }
+      .close-btn {
+        appearance: none;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+      .close-btn:hover { border-color: #bec6d4; }
+      .badge { font-size: 11px; color: #cbd7ff; background: rgba(91,140,255,.15); border: 1px solid rgba(91,140,255,.35); padding: 4px 8px; border-radius: 999px; }
+      .footer { margin-top: 22px; color: var(--muted); font-size: 12px; text-align: center; }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>最新公告</h1>
+        <div class="toolbar">
+          <input id="search" class="search" placeholder="搜尋標題或內容…" />
+          <button class="refresh" id="refreshBtn" title="重新讀取">重新整理</button>
+        </div>
+      </header>
+
+      <div id="status" class="empty" hidden>載入中…</div>
+      <div id="error" class="error" hidden></div>
+      <div id="list" class="grid" aria-live="polite"></div>
+
+      <div class="footer">ＯＯＯ版權所有</div>
+    </div>
+
+    <dialog id="modal" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-title" class="modal-title"></h2>
+          <div id="modal-date" class="modal-date"></div>
+        </div>
+        <button class="close-btn" id="closeModal">關閉</button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </dialog>
+
+    <script>
+      // --- 設定 ---
+      const POSTS_INDEX_URL = 'post/index.json'; // 由建置流程或腳本生成（見下方說明）
+
+      const el = {
+        list: document.getElementById('list'),
+        status: document.getElementById('status'),
+        error: document.getElementById('error'),
+        search: document.getElementById('search'),
+        refresh: document.getElementById('refreshBtn'),
+        modal: document.getElementById('modal'),
+        modalTitle: document.getElementById('modal-title'),
+        modalDate: document.getElementById('modal-date'),
+        modalBody: document.getElementById('modal-body'),
+        closeModal: document.getElementById('closeModal'),
+      };
+
+      const fmt = new Intl.DateTimeFormat('zh-Hant-TW', { dateStyle: 'medium', timeStyle: 'short' });
+
+      function parseFromFilename(name) { // 例：202509251400.json
+        const m = name.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);
+        if (!m) return null;
+        const [_, y, mo, d, h, mi] = m.map(Number);
+        // 以本地時區建立時間（依需求可改用 UTC）
+        try {
+          return new Date(y, mo - 1, d, h, mi, 0);
+        } catch { return null; }
+      }
+
+      function sanitize(str) {
+        // 簡易轉義：避免把 JSON 內容當 HTML 解讀
+        return String(str)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;');
+      }
+
+      async function fetchIndex() {
+        const res = await fetch(POSTS_INDEX_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('找不到 index.json，請參考下方「部署說明」建立索引檔');
+        return res.json(); // 應為字串陣列：如 ["202509251400.json", ...]
+      }
+
+      async function fetchPost(path) {
+        const res = await fetch('post/' + path, { cache: 'no-store' });
+        if (!res.ok) throw new Error('讀取公告失敗：' + path);
+        return res.json(); // { title, date, content }
+      }
+
+      function renderList(items) {
+        el.list.innerHTML = '';
+        if (!items.length) {
+          el.status.hidden = false;
+          el.status.textContent = '目前沒有公告。';
+          return;
+        }
+        el.status.hidden = true;
+
+        const q = el.search.value.trim().toLowerCase();
+        const filtered = q
+          ? items.filter(x =>
+              x.title.toLowerCase().includes(q) ||
+              x.content.toLowerCase().includes(q)
+            )
+          : items;
+
+        for (const it of filtered) {
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.tabIndex = 0;
+          card.setAttribute('role', 'button');
+          card.setAttribute('aria-label', it.title);
+
+          const h3 = document.createElement('h3');
+          h3.textContent = it.title;
+          const date = document.createElement('div');
+          date.className = 'date';
+          date.textContent = fmt.format(it._dt);
+
+          const excerpt = document.createElement('div');
+          excerpt.className = 'excerpt';
+          const preview = it.content.replace(/\n+/g, ' ').slice(0, 90);
+          excerpt.textContent = preview + (it.content.length > 90 ? '…' : '');
+
+          card.appendChild(h3);
+          card.appendChild(date);
+          card.appendChild(excerpt);
+
+          card.addEventListener('click', () => openModal(it));
+          card.addEventListener('keypress', (e) => { if (e.key === 'Enter') openModal(it); });
+
+          el.list.appendChild(card);
+        }
+      }
+
+      function openModal(it) {
+        el.modalTitle.textContent = it.title;
+        el.modalDate.textContent = fmt.format(it._dt);
+        el.modalBody.innerHTML = '<div style="white-space:pre-wrap;word-wrap:break-word;margin:0">' + it.content + '</div>';
+        //el.modalBody.innerHTML = '<pre style="white-space:pre-wrap;word-wrap:break-word;margin:0">' + sanitize(it.content) + '</pre>';
+        if (!el.modal.open) el.modal.showModal();
+      }
+
+      async function load() {
+        el.error.hidden = true;
+        el.status.hidden = false;
+        el.status.textContent = '載入中…';
+        try {
+          const files = await fetchIndex(); // ["202509251400.json", ...]
+          // 依檔名時間排序（新→舊）
+          files.sort((a, b) => (b.localeCompare(a)));
+          const posts = await Promise.all(
+            files.map(async (name) => {
+              const data = await fetchPost(name);
+              const dt = data.date ? new Date(data.date) : parseFromFilename(name);
+              return {
+                ...data,
+                _file: name,
+                _dt: dt || new Date(0),
+              };
+            })
+          );
+          // 若需要，以內容 date 欄位再做一次排序保險
+          posts.sort((a, b) => b._dt - a._dt);
+          renderList(posts);
+        } catch (err) {
+          el.error.hidden = false;
+          el.error.textContent = err.message;
+          el.status.hidden = true;
+        }
+      }
+
+      // 事件
+      el.refresh.addEventListener('click', load);
+      el.search.addEventListener('input', () => {
+        // 即時過濾（不重新抓）
+        const cards = Array.from(el.list.querySelectorAll('.card'));
+        if (!cards.length) return; // 尚未載入
+        const q = el.search.value.trim().toLowerCase();
+        for (const card of cards) {
+          const text = card.textContent.toLowerCase();
+          card.style.display = text.includes(q) ? '' : 'none';
+        }
+      });
+      el.closeModal.addEventListener('click', () => el.modal.close());
+      el.modal.addEventListener('click', (e) => { if (e.target === el.modal) el.modal.close(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && el.modal.open) el.modal.close(); });
+
+      // 初始化
+      load();
+    </script>
+
+    <!--
+    部署說明（摘要）：
+    1) 將此檔案存為 /index.html。
+    2) 在網站根目錄建立 ../post/ 目錄，放入多個 JSON 檔（檔名採 YYYYMMDDHHmm.json）。
+       每個 JSON 需包含：{"title":"...","date":"2025-09-25T14:00:00+08:00","content":"..."}
+       * 若不提供 date，會從檔名解析排序。
+    3) 於 ../post/ 目錄放置 index.json（內容為檔名陣列），例如：
+       ["202509251400.json", "202509221230.json"]
+       可用下方提供的 Node 腳本在建置時自動產生。
+    4) 將專案部署至 Netlify（不需打包流程亦可）。
+    -->
+  </body>
+</html>
