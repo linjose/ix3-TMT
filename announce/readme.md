@@ -10,3 +10,11 @@
 ["202509251400.json", "202509221230.json"]
 可用下方提供的 Node 腳本在建置時自動產生。
 4) 將專案部署至 Netlify（不需打包流程亦可）。
+
+
+### 
+```
+<!-- hitwebcounter Code START -->
+<a href="https://www.hitwebcounter.com/" target="_blank">
+<img src="https://hitwebcounter.com/counter/counter.php?page=21442324&style=0007&nbdigits=5&type=page&initCount=0" title="Counters" Alt="Counters"   border="0" /></a>                                    
+```
