@@ -12,9 +12,8 @@
 4) 將專案部署至 Netlify（不需打包流程亦可）。
 
 
-### 
+### free counter
+Add counter
 ```
-<!-- hitwebcounter Code START -->
-<a href="https://www.hitwebcounter.com/" target="_blank">
-<img src="https://hitwebcounter.com/counter/counter.php?page=21442324&style=0007&nbdigits=5&type=page&initCount=0" title="Counters" Alt="Counters"   border="0" /></a>                                    
+<img src='https://www.counter12.com/img-ca5ZZAx047b344w9-57.gif' border='0' alt='counter'><script type='text/javascript' src='https://www.counter12.com/ad.js?id=ca5ZZAx047b344w9'></script>                               
 ```
