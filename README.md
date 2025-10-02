@@ -55,8 +55,7 @@ echo 'please check folder converted_jpg'
 <pre><code>sudo sed -i 's/policy domain="coder" rights="none" pattern="PDF"/policy domain="coder" rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml</code></pre>
 
 #### PNG Resize (預覽圖)
-<pre><code>
-
+```
 from PIL import Image
 
 # Open the original PNG image
@@ -85,9 +84,7 @@ hsize = int((float(img.size[1]) * float(wpercent)))
 resized_img_aspect_ratio = img.resize((basewidth, hsize), Image.Resampling.LANCZOS) # Using LANCZOS for better quality
 resized_img_aspect_ratio.save('output_resized_aspect_ratio.png')
 print(f"Image resized with aspect ratio maintained to width {basewidth} and saved as 'output_resized_aspect_ratio.png'")
-    
-</code><pre>
-
+```
 
 
 #### 欄位
