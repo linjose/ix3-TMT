@@ -88,7 +88,7 @@ print(f"Image resized with aspect ratio maintained to width {basewidth} and save
 
 
 #### 欄位
-- id uuid
+- id uuid v7
 - file_name 檔案名稱
 - file_size 檔案大小
 - file_pages 檔案頁數
