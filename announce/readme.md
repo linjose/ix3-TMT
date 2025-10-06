@@ -4,6 +4,7 @@
 部署說明（摘要）：
 1) 將此檔案存為 /index.html。
 2) 在網站根目錄建立 post/ 目錄，放入多個 JSON 檔（檔名採 YYYYMMDDHHmm.json）。
+
 每個 JSON 需包含：{"title":"...","date":"2025-09-25T14:00:00+08:00","content":"..."}
 * 若不提供 date，會從檔名解析排序。
 3) 於 post/ 目錄放置 index.json（內容為檔名陣列），例如：
