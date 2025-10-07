@@ -26,7 +26,8 @@ php -v
 ### converters ###
 #### PPT to PDF to PNG
 引用： hadwinzhy/convert-ppt-to-jpg
-<pre><code>sudo apt-get update && sudo apt-get install -y libreoffice openjdk-8-jdk imagemagick</code></pre>
+<pre><code>sudo apt-get update 
+sudo apt-get install -y libreoffice openjdk-8-jdk imagemagick</code></pre>
 
 <pre><code>#!/bin/bash
 
