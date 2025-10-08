@@ -129,3 +129,6 @@ superset run -h 0.0.0.0 -p 8088
 
  - ppt to txt (es/Quickwit儲存+中文分詞器)
  - AI Search
+
+
+(2025/10/8:比較 Open Slideshare 相同功能 https://ryuzee.github.io/open-slideshare/)
