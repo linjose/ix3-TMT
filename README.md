@@ -131,4 +131,5 @@ superset run -h 0.0.0.0 -p 8088
  - AI Search
 
 
-(2025/10/8:比較 Open Slideshare 相同功能 https://ryuzee.github.io/open-slideshare/)
+2025/10/8：比較Open Slideshare 相同功能 https://ryuzee.github.io/open-slideshare/
+  - Open Slideshare 呈現方式是以投影片封面，TMT 是將投影片展開打散呈現每一頁，更能幫助快速瀏覽
