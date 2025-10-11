@@ -113,12 +113,14 @@ print(f"Image resized with aspect ratio maintained to width {basewidth} and save
 sudo apt update
 sudo apt upgrade
 sudo apt-get install micro build-essential libssl-dev libffi-dev python3-dev python3-pip libsasl2-dev libldap2-dev default-libmysqlclient-dev
-sudo apt install python3.12-venv
-sudo apt install python3.12-dev
+sudo apt install python3.12-venv python3.12-dev
+
 pip install --upgrade pip setuptools wheel pillow 
 pip install apache-superset --break-system-packages
+
 export SUPERSET_SECRET_KEY=***********
 export FLASK_APP=superset
+
 pip install marshmallow==3.20.1 --break-system-packages
 superset db upgrade
 superset fab create-admin
