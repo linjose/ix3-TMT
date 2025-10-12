@@ -10,7 +10,7 @@
 3) 於 post/ 目錄放置 index.json（內容為檔名陣列），例如：
 ["202509251400.json", "202509221230.json"]
 可用下方提供的 Node 腳本在建置時自動產生。
-4) 將專案部署至 Netlify（不需打包流程亦可）。
+4) 將專案部署至 Netlify（不需打包流程亦可）、Apache2、Nginx等亦可。
 
 
 ### free counter
