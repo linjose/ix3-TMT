@@ -29,6 +29,7 @@ php -v
 <pre><code>sudo apt-get update 
 sudo apt-get install -y libreoffice openjdk-8-jdk imagemagick</code></pre>
 
+同convert.sh
 <pre><code>#!/bin/bash
 
 path=${1}
