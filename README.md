@@ -111,10 +111,18 @@ print(f"Image resized with aspect ratio maintained to width {basewidth} and save
    - superset (參考：https://www.sabbirz.com/blog/install-apache-superset-on-ubuntu-a-complete-step- )
    - 待中文化 (https://github.com/lutinglt/superset-zh)
 ```
+# 更新套件列表與系統
 sudo apt update
-sudo apt upgrade
-sudo apt-get install micro build-essential libssl-dev libffi-dev python3-dev python3-pip libsasl2-dev libldap2-dev default-libmysqlclient-dev
-sudo apt install python3.12-venv python3.12-dev
+sudo apt upgrade -y
+
+# 安裝必要開發工具與函式庫
+sudo apt install -y micro build-essential libssl-dev libffi-dev \
+  python3-dev python3-pip libsasl2-dev libldap2-dev \
+  default-libmysqlclient-dev
+
+# 安裝 Python 3.12 相關套件
+sudo apt install -y python3.12-venv python3.12-dev
+
 
 pip install --upgrade pip setuptools wheel pillow 
 pip install apache-superset --break-system-packages
