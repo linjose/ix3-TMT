@@ -1,0 +1,19 @@
+[Unit]
+Description=ix3-TMT Django web
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=tmt
+Group=tmt
+WorkingDirectory=/opt/ix3-TMT
+EnvironmentFile=/etc/ix3-tmt.env
+ExecStart=/opt/ix3-TMT/.venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --threads 4 --timeout 120
+Restart=on-failure
+RestartSec=3
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

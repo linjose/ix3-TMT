@@ -1,0 +1,7 @@
+Django>=5.2.8,<5.3
+Pillow>=11.0,<13
+python-pptx>=1.0,<2
+jieba>=0.42,<1
+psycopg[binary]>=3.2,<4
+gunicorn>=23,<24
+whitenoise>=6.9,<7

@@ -1,0 +1,37 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}ix3-TMT{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'tmt/app.css' %}">
+  <script defer src="{% static 'tmt/app.js' %}"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{% url 'tmt:home' %}"><span class="brand-mark">TMT</span><span class="brand-sub">Slide Arsenal</span></a>
+  {% if user.is_authenticated %}
+  <nav class="nav">
+    <a href="{% url 'tmt:home' %}">探索</a>
+    <a href="{% url 'tmt:collections' %}">收藏夾</a>
+    <a href="{% url 'tmt:contributions' %}">我的貢獻</a>
+    <a href="{% url 'tmt:leaderboard' %}">貢獻榜</a>
+    <a class="nav-primary" href="{% url 'tmt:upload' %}">＋ 上傳簡報</a>
+    {% if user.is_staff %}<a href="/admin/">管理</a>{% endif %}
+    <form method="post" action="{% url 'logout' %}" class="inline-form">{% csrf_token %}<button class="link-button" type="submit">登出 {{ user.username }}</button></form>
+  </nav>
+  {% endif %}
+</header>
+<main class="page-shell">
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}
+    </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

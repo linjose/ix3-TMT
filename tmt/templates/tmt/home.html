@@ -1,0 +1,60 @@
+{% extends "tmt/base.html" %}
+{% block title %}探索投影片 · ix3-TMT{% endblock %}
+{% block content %}
+<section class="hero compact">
+  <div>
+    <p class="eyebrow">TEAM KNOWLEDGE & SLIDE INTELLIGENCE</p>
+    <h1>顧問軍火庫</h1>
+    <p>搜尋同仁簡報中的每一頁，快速發現、收藏與再利用團隊知識。</p>
+  </div>
+  <a class="button primary" href="{% url 'tmt:upload' %}">上傳 PPT</a>
+</section>
+
+<form class="search-panel" method="get">
+  <div class="search-row">
+    <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="搜尋 AI Agent、Hype Cycle、醫療、市場規模…" autofocus>
+    <select name="sort" aria-label="排序">
+      <option value="newest" {% if sort == 'newest' %}selected{% endif %}>最新</option>
+      <option value="popular" {% if sort == 'popular' %}selected{% endif %}>最多 Star</option>
+      <option value="viewed" {% if sort == 'viewed' %}selected{% endif %}>最多閱讀</option>
+    </select>
+    <button class="button primary" type="submit">搜尋</button>
+  </div>
+  <div class="filter-row">
+    <a class="chip {% if not tag and not mine and not starred_filter %}active{% endif %}" href="{% url 'tmt:home' %}{% if q %}?q={{ q|urlencode }}{% endif %}">全部</a>
+    <a class="chip {% if starred_filter %}active{% endif %}" href="?starred=1{% if q %}&q={{ q|urlencode }}{% endif %}">★ 我的 Star</a>
+    <a class="chip {% if mine %}active{% endif %}" href="?mine=1{% if q %}&q={{ q|urlencode }}{% endif %}">我的上傳</a>
+    {% for t in popular_tags %}<a class="chip {% if tag == t.name %}active{% endif %}" href="?tag={{ t.name|urlencode }}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ t.name }}</a>{% endfor %}
+  </div>
+</form>
+
+<div class="section-head">
+  <div><h2>{% if q %}「{{ q }}」的結果{% elif starred_filter %}我的 Star{% elif mine %}我的投影片{% else %}最新投影片{% endif %}</h2><p>{{ slides|length }} 張（單次最多顯示 120 張）</p></div>
+</div>
+
+{% if slides %}
+<div class="slide-grid">
+  {% for slide in slides %}
+  <article class="slide-card">
+    <a class="slide-image-wrap" href="{% url 'tmt:slide_detail' slide.pk %}">
+      <img loading="lazy" src="{% url 'tmt:slide_thumbnail' slide.pk %}" alt="{{ slide.title }}">
+      <span class="page-badge">{{ slide.page_number }}/{{ slide.deck.page_count }}</span>
+    </a>
+    <div class="slide-card-body">
+      <div class="slide-card-top">
+        <a class="slide-title" href="{% url 'tmt:slide_detail' slide.pk %}">{{ slide.title|default:"未命名投影片"|truncatechars:76 }}</a>
+        <button class="star-button {% if slide.id in starred_ids %}active{% endif %}" data-star-url="{% url 'tmt:toggle_star' slide.pk %}" title="Star">
+          <span class="star-symbol">★</span><span data-star-count>{{ slide.star_count }}</span>
+        </button>
+      </div>
+      {% if slide.summary %}<p class="summary">{{ slide.summary|truncatechars:150 }}</p>{% endif %}
+      <div class="tag-list">{% for t in slide.tags.all|slice:":4" %}<a href="?tag={{ t.name|urlencode }}">#{{ t.name }}</a>{% endfor %}</div>
+      <div class="meta-line"><a href="{% url 'tmt:deck_detail' slide.deck.pk %}">{{ slide.deck.title|truncatechars:42 }}</a><span>{{ slide.deck.owner.username }}</span></div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state"><h3>找不到符合條件的投影片</h3><p>換一組關鍵字，或先上傳第一份簡報。</p></div>
+{% endif %}
+{% endblock %}

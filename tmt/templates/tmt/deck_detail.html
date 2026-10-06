@@ -1,0 +1,25 @@
+{% extends "tmt/base.html" %}
+{% block title %}{{ deck.title }} · ix3-TMT{% endblock %}
+{% block content %}
+<section class="deck-header">
+  <div>
+    <p class="eyebrow">DECK</p>
+    <h1>{{ deck.title }}</h1>
+    <p>{{ deck.description|default:"沒有額外說明。" }}</p>
+    <div class="meta-pills"><span>{{ deck.owner.username }}</span><span>{{ deck.get_visibility_display }}</span><span>{{ deck.created_at|date:"Y-m-d H:i" }}</span>{% if deck.page_count %}<span>{{ deck.page_count }} 頁</span>{% endif %}</div>
+  </div>
+  <div class="stack-actions"><a class="button primary" href="{% url 'tmt:deck_download' deck.pk %}">下載原始簡報</a>{% if user == deck.owner or user.is_staff %}<a class="button" href="{% url 'tmt:deck_edit' deck.pk %}">編輯資訊/權限</a>{% endif %}{% if deck.status == 'failed' %}<form method="post" action="{% url 'tmt:retry_job' deck.pk %}">{% csrf_token %}<button class="button danger" type="submit">重新排程</button></form>{% endif %}{% if user == deck.owner or user.is_staff %}<form method="post" action="{% url 'tmt:deck_delete' deck.pk %}" onsubmit="return confirm('確定刪除這份簡報及所有衍生投影片？');">{% csrf_token %}<button class="button danger" type="submit">刪除</button></form>{% endif %}</div>
+</section>
+
+{% if deck.status != 'ready' %}
+<div class="processing-panel status-{{ deck.status }}" data-processing-refresh>
+  <div class="status-dot"></div>
+  <div><h2>{{ deck.get_status_display }}</h2><p>上傳已完成；投影片轉圖與 OCR 由背景 Worker 批次處理。重新整理即可查看進度。</p>{% if deck.processing_error %}<pre>{{ deck.processing_error }}</pre>{% endif %}{% if latest_job %}<p class="help">Job #{{ latest_job.pk }} · 嘗試 {{ latest_job.attempts }} 次 · {{ latest_job.get_status_display }}</p>{% endif %}</div>
+</div>
+{% else %}
+{% if deck.source_title or deck.source_author or deck.source_publisher or deck.source_url or deck.copyright_notice %}
+<details class="source-card"><summary>來源與著作權資訊</summary><dl>{% if deck.source_title %}<dt>來源</dt><dd>{{ deck.source_title }}</dd>{% endif %}{% if deck.source_author %}<dt>作者</dt><dd>{{ deck.source_author }}</dd>{% endif %}{% if deck.source_publisher %}<dt>機構</dt><dd>{{ deck.source_publisher }}</dd>{% endif %}{% if deck.source_url %}<dt>網址</dt><dd><a rel="noopener" target="_blank" href="{{ deck.source_url }}">{{ deck.source_url }}</a></dd>{% endif %}{% if deck.copyright_notice %}<dt>著作權</dt><dd>{{ deck.copyright_notice }}</dd>{% endif %}</dl></details>
+{% endif %}
+<div class="slide-grid deck-grid">{% for slide in slides %}<article class="slide-card"><a class="slide-image-wrap" href="{% url 'tmt:slide_detail' slide.pk %}"><img loading="lazy" src="{% url 'tmt:slide_thumbnail' slide.pk %}" alt="{{ slide.title }}"><span class="page-badge">{{ slide.page_number }}</span></a><div class="slide-card-body"><a class="slide-title" href="{% url 'tmt:slide_detail' slide.pk %}">{{ slide.title|truncatechars:70 }}</a><div class="meta-line"><span>★ {{ slide.star_count }}</span><span>閱讀 {{ slide.view_count }}</span>{% if slide.ocr_used %}<span>OCR</span>{% endif %}</div></div></article>{% endfor %}</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,20 @@
+[Unit]
+Description=ix3-TMT PPT/OCR worker
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=tmt
+Group=tmt
+WorkingDirectory=/opt/ix3-TMT
+EnvironmentFile=/etc/ix3-tmt.env
+ExecStart=/opt/ix3-TMT/.venv/bin/python manage.py process_jobs --loop --poll-seconds 30
+Restart=on-failure
+RestartSec=5
+Nice=10
+IOSchedulingClass=idle
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

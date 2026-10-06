@@ -1,0 +1,26 @@
+{% extends "tmt/base.html" %}
+{% block title %}上傳簡報 · ix3-TMT{% endblock %}
+{% block content %}
+<div class="content-narrow">
+  <div class="section-head"><div><p class="eyebrow">CONTRIBUTE</p><h1>上傳簡報</h1><p>系統會排程將簡報拆成每一頁，抽取文字，必要時執行繁中＋英文 OCR。</p></div></div>
+  <form method="post" enctype="multipart/form-data" class="form-card">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="field"><label for="{{ form.title.id_for_label }}">簡報名稱</label>{{ form.title }}{{ form.title.errors }}</div>
+    <div class="field"><label for="{{ form.original_file.id_for_label }}">PPT / PPTX（最大 {{ TMT_MAX_UPLOAD_MB }} MB）</label><div class="drop-field">{{ form.original_file }}</div>{{ form.original_file.errors }}</div>
+    <div class="field"><label for="{{ form.description.id_for_label }}">說明</label>{{ form.description }}{{ form.description.errors }}</div>
+    <div class="field"><label for="{{ form.visibility.id_for_label }}">可見範圍</label>{{ form.visibility }}{{ form.visibility.errors }}<p class="help">「指定群組/人員」與「機密」必須在下方至少指定一個對象。</p></div>
+    <details class="details-panel"><summary>權限與來源資訊</summary>
+      <div class="two-col">
+        <div class="field"><label>允許群組</label>{{ form.allowed_groups }}{{ form.allowed_groups.errors }}</div>
+        <div class="field"><label>允許使用者</label>{{ form.allowed_users }}{{ form.allowed_users.errors }}</div>
+        <div class="field"><label>原始資料名稱</label>{{ form.source_title }}</div>
+        <div class="field"><label>作者</label>{{ form.source_author }}</div>
+        <div class="field"><label>出版/研究機構</label>{{ form.source_publisher }}</div>
+        <div class="field"><label>來源網址</label>{{ form.source_url }}</div>
+      </div>
+      <div class="field"><label>著作權/授權備註</label>{{ form.copyright_notice }}</div>
+    </details>
+    <div class="action-row"><button class="button primary large" type="submit">上傳並加入批次處理</button><a class="button" href="{% url 'tmt:home' %}">取消</a></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "tmt/base.html" %}
+{% block title %}{{ slide.title }} · ix3-TMT{% endblock %}
+{% block content %}
+<div class="slide-detail-layout">
+  <section class="viewer-panel">
+    <div class="viewer-toolbar"><a href="{% url 'tmt:deck_detail' slide.deck.pk %}">← {{ slide.deck.title|truncatechars:52 }}</a><span>{{ slide.page_number }} / {{ slide.deck.page_count }}</span></div>
+    <img class="full-slide" src="{% url 'tmt:slide_image' slide.pk %}" alt="{{ slide.title }}">
+    <div class="pager">{% if prev_slide %}<a class="button" href="{% url 'tmt:slide_detail' prev_slide.pk %}">← 上一頁</a>{% else %}<span></span>{% endif %}{% if next_slide %}<a class="button" href="{% url 'tmt:slide_detail' next_slide.pk %}">下一頁 →</a>{% endif %}</div>
+  </section>
+  <aside class="detail-panel">
+    <p class="eyebrow">SLIDE {{ slide.page_number }}</p><h1>{{ slide.title }}</h1>
+    <button class="star-button large {% if is_starred %}active{% endif %}" data-star-url="{% url 'tmt:toggle_star' slide.pk %}"><span class="star-symbol">★</span> Star <span data-star-count>{{ slide.star_count }}</span></button>
+    {% if slide.summary %}<div class="detail-block"><h3>摘要</h3><p>{{ slide.summary }}</p></div>{% endif %}
+    <div class="detail-block"><h3>Tags</h3><div class="tag-list">{% for tag in slide.tags.all %}<a href="{% url 'tmt:home' %}?tag={{ tag.name|urlencode }}">#{{ tag.name }}</a>{% empty %}<span class="muted">尚無 Tag</span>{% endfor %}</div></div>
+    <div class="detail-block"><h3>加入收藏夾</h3>{% if collections %}<form method="post" action="{% url 'tmt:collection_add' slide.pk %}" class="collection-add">{% csrf_token %}<select name="collection_id">{% for c in collections %}<option value="{{ c.pk }}">{{ c.name }}{% if c.id in contained_in %} ✓{% endif %}</option>{% endfor %}</select><input type="hidden" name="next" value="{{ request.path }}"><input type="text" name="note" maxlength="500" placeholder="可選：我的備註"><button class="button" type="submit">加入</button></form>{% endif %}<a class="text-link" href="{% url 'tmt:collection_create' %}">＋ 新增收藏夾</a></div>
+    <div class="detail-block"><h3>來源簡報</h3><p><a href="{% url 'tmt:deck_detail' slide.deck.pk %}">{{ slide.deck.title }}</a><br>第 {{ slide.page_number }} / {{ slide.deck.page_count }} 頁<br>貢獻者：{{ slide.deck.owner.username }}</p><a class="button" href="{% url 'tmt:deck_download' slide.deck.pk %}">下載原始 PPT</a></div>
+    <details class="detail-block"><summary>搜尋文字來源</summary><div class="text-source"><strong>PPT 原生文字</strong><pre>{{ slide.native_text|default:"（無）" }}</pre><strong>OCR</strong><pre>{{ slide.ocr_text|default:"（未執行或無文字）" }}</pre>{% if slide.ocr_error %}<p class="error-text">{{ slide.ocr_error }}</p>{% endif %}</div></details>
+  </aside>
+</div>
+{% endblock %}
